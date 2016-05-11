@@ -15,7 +15,8 @@ from matplotlib.mlab import griddata
 MMPerInch = 25.4
 #FocalRad = 9000 # MM, du Pont telescope focal plane radius of curvature.
 MeasRadii = numpy.asarray([0.8, 3.8, 5.8, 7.8, 10.8]) * MMPerInch
-DirThetaMap = OrderedDict((
+MeasRadiiCurtis = numpy.asarray([25.4, 76.2, 152.4, 228.6, 279.4])
+DirThetaMapCard = OrderedDict((
     ("N", 0.),
     ("NE", 7. * numpy.pi / 4.),
     ("E", 3. * numpy.pi / 2.),
@@ -26,21 +27,39 @@ DirThetaMap = OrderedDict((
     ("NW", numpy.pi / 4.),
 ))
 
-def plotRadialSurface(R, T, Z, zlim=None, plate=None):
+DirThetaMapHour = OrderedDict((
+    ("twelve", 0 * 2 * numpy.pi / 12.),
+    ("one", 1 * 2 * numpy.pi / 12.),
+    ("two", 2 * 2 * numpy.pi / 12.),
+    ("three", 3 * 2 * numpy.pi / 12.),
+    ("four", 4 * 2 * numpy.pi / 12.),
+    ("five", 5 * 2 * numpy.pi / 12.),
+    ("six", 6 * 2 * numpy.pi / 12.),
+    ("seven", 7 * 2 * numpy.pi / 12.),
+    ("eight", 8 * 2 * numpy.pi / 12.),
+    ("nine", 9 * 2 * numpy.pi / 12.),
+    ("ten", 10 * 2 * numpy.pi / 12.),
+    ("eleven", 11 * 2 * numpy.pi / 12.),
+
+))
+
+def plotRadialSurface(R, T, Z, zlim=None, plate=None, newFig=True, ax=None):
     #http://stackoverflow.com/questions/3526514/problem-with-2d-interpolation-in-scipy-non-rectangular-grid
     #http://matplotlib.org/mpl_toolkits/mplot3d/tutorial.html
-    fig = plt.figure()
-    ax = fig.gca(projection='3d')
+    if newFig:
+        fig = plt.figure()
+        ax = fig.gca(projection='3d')
+        if zlim:
+            ax.set_zlim(zlim)
+        plt.xlabel("+West")
+        plt.ylabel("+North")
+        titleTxt = "focal plane residual (mm)"
+        if plate is not None:
+            titleTxt += "\nplate %i"%plate
+        plt.title(titleTxt)
     surf = ax.plot_surface(R*numpy.cos(T), R*numpy.sin(T), Z, rstride=1, cstride=1, cmap=cm.coolwarm,
                            linewidth=0, antialiased=False)
-    if zlim:
-        ax.set_zlim(zlim)
-    plt.xlabel("+West")
-    plt.ylabel("+North")
-    titleTxt = "focal plane residual (mm)"
-    if plate is not None:
-        titleTxt += "\nplate %i"%plate
-    plt.title(titleTxt)
+    return ax
     #plt.show()
 
 class RadialSurfaceProfile(object):
@@ -104,52 +123,59 @@ class DuPontFocalProfile(RadialSurfaceProfile):
     focalRadius = 9000 # mm
     # zOffset is z distance from spherical origin to chord/surface describing
     # the plate location in the focal plane
-    zOffsetToPlate = numpy.sqrt(focalRadius**2 - numpy.max(MeasRadii)**2)
+    zOffsetToPlate = numpy.sqrt(focalRadius**2 - numpy.max(MeasRadiiCurtis)**2)
     def __init__(self):
         # default to cardinal direction thetas (matching plate meas directions)
         # and radii matching plate profilometry radius measurements
-        thetas = numpy.asarray(DirThetaMap.values() + [2*numpy.pi]) # add 2pi for boundary conditions
-        zs = self.zRT(MeasRadii, thetas)
+        thetas = numpy.asarray(DirThetaMapHour.values() + [2*numpy.pi]) # add 2pi for boundary conditions
+        zs = self.zRT(MeasRadiiCurtis, thetas)
         # repeat zs for each theta
         zs = numpy.tile(zs, (len(thetas), 1))
-        RadialSurfaceProfile.__init__(self, MeasRadii, thetas, zs)
+        RadialSurfaceProfile.__init__(self, MeasRadiiCurtis, thetas, zs)
 
     def zRT(self, radius, theta):
         # return z position from r, theta
         return numpy.sqrt(self.focalRadius**2-radius**2) - self.zOffsetToPlate
 
-
-class CardinalMeasurement(object):
-    # radii in inches increasing correspoinding to each
-    # directional measurements 1, 4, 6, 8, 11
-    # convert to mm
-    def __init__(self, direction, measList):
+class Measurement(object):
+    def __init__(self, direction, measList, dirThetaMap, toMM = False):
         # meas least must be in increasing radius
         # measurements in inches (converted to mm)
-        assert len(measList) == len(MeasRadii)
-        assert direction.upper() in DirThetaMap.keys()
+        assert len(measList) == len(MeasRadiiCurtis)
+        assert direction in dirThetaMap.keys(), direction + "  " + str(dirThetaMap.keys())
         self.direction = direction
-        self.theta = DirThetaMap[direction.upper()]
-        self.measList = numpy.asarray([measList]) * MMPerInch
+        self.theta = dirThetaMap[direction]
+        self.measList = numpy.asarray([measList])
+        if toMM is True:
+            self.measList = self.measList * MMPerInch
+
+
+class CardinalMeasurement(Measurement):
+    def __init__(self, direction, measList):
+        Measurement.__init__(self, direction, measList, DirThetaMapCard, toMM = True)
+
+class HourMeasurement(Measurement):
+    def __init__(self, direction, measList):
+        Measurement.__init__(self, direction, measList, DirThetaMapHour)
 
 class PlateProfile(RadialSurfaceProfile):
-    def __init__(self, cardMeasurementList, plate=None):
+    def __init__(self, measurementList, plate=None):
         self.plate = plate
-        self.cardMeasurementList = cardMeasurementList
+        self.measurementList = measurementList
         # add an additional (identical) measurement as 0
         # at 2pi to enforce continuity
-        for cml in self.cardMeasurementList:
+        for cml in self.measurementList:
             if cml.theta == 0:
                 cml0 = copy.deepcopy(cml)
                 break
         cml0.theta = 2 * numpy.pi
-        cardMeasurementList.append(cml0)
+        measurementList.append(cml0)
         # sort in order of increasing theta (probably is already...)
-        cardMeasurementList = sorted(cardMeasurementList, key=lambda cml: cml.theta)
-        self.cardMeasurementList = cardMeasurementList
-        thetas = numpy.asarray([cml.theta for cml in self.cardMeasurementList])
-        zs = numpy.asarray([cml.measList for cml in self.cardMeasurementList]).squeeze()
-        RadialSurfaceProfile.__init__(self, MeasRadii, thetas, zs)
+        measurementList = sorted(measurementList, key=lambda cml: cml.theta)
+        self.measurementList = measurementList
+        thetas = numpy.asarray([cml.theta for cml in self.measurementList])
+        zs = numpy.asarray([cml.measList for cml in self.measurementList]).squeeze()
+        RadialSurfaceProfile.__init__(self, MeasRadiiCurtis, thetas, zs)
 
 class FocalPlaneFitter(object):
     def __init__(self, targetProfile, measuredProfile, plate=None):
@@ -176,12 +202,28 @@ class FocalPlaneFitter(object):
         rMeas, tMeas, zMeas = self.measuredProfile.interpRadialSurface(10,36)
         zModel = self.targetProfile.zRT(rMeas, tMeas)
         surfZerr = zModel - zMeas
+        # surfZerr = zModel
         surfZerr = surfZerr - numpy.mean(surfZerr)
         rGrid, tGrid = numpy.meshgrid(rMeas, tMeas)
         zLim = numpy.max(numpy.abs(surfZerr))*1.1
         zLim = (-1*zLim, zLim)
         # zLim = (0.02, .08)
         plotRadialSurface(rGrid, tGrid, surfZerr, zlim = zLim, plate=self.plate)
+
+    def plot2Surf(self):
+        rMeas = self.measuredProfile.radii
+        tMeas = self.measuredProfile.thetas
+        zMeas = self.measuredProfile.zs
+        # interpolate r, t and z for a nicer plot?
+        rMeas, tMeas, zMeas = self.measuredProfile.interpRadialSurface(10,36)
+        zModel = self.targetProfile.zRT(rMeas, tMeas)
+        rGrid, tGrid = numpy.meshgrid(rMeas, tMeas)
+        maxZ = numpy.max(zModel)
+        minZ = numpy.min(zModel)
+        zLim = (minZ - .1 * minZ, maxZ + .1 * maxZ)
+        # zLim = (0.02, .08)
+        ax = plotRadialSurface(rGrid, tGrid, zModel, zlim = zLim, plate=self.plate)
+        plotRadialSurface(rGrid, tGrid, zMeas, plate=self.plate, newFig=False, ax=ax)
 
 
 
@@ -338,10 +380,28 @@ cardMeasList10 = [
     CardinalMeasurement("NW", [.221, .192, .163, .127, .054]),
 ]
 
-pf = PlateProfile(cardMeasList10, plate=8770)
+# Curtis Measurement at UW April 6 2016
+
+hourMeasList1 = [
+    HourMeasurement("twelve", numpy.asarray([-4.24, -4.11, -2.57, -2.54, -1.42])*-1.),
+    HourMeasurement("one", numpy.asarray([-4.29, -4.14, -3.58, -2.54, -1.41])*-1.),
+    HourMeasurement("two", numpy.asarray([-4.35, -4.19, -3.61, -2.55, -1.41])*-1.),
+    HourMeasurement("three", numpy.asarray([-4.38, -4.22, -3.65, -2.57, -1.42])*-1.),
+    HourMeasurement("four", numpy.asarray([-4.33, -4.18, -3.63, -2.98, -1.44])*-1.),
+    HourMeasurement("five", numpy.asarray([-4.25, -4.1, -3.55, -2.53, -1.41])*-1.),
+    HourMeasurement("six", numpy.asarray([-4.25, -4.1, -3.56, -2.53, -1.41])*-1.),
+    HourMeasurement("seven", numpy.asarray([-4.3, -4.17, -3.62, -2.57, -1.43])*-1.),
+    HourMeasurement("eight", numpy.asarray([-4.37, -4.24, -3.69, -2.61, -1.45])*-1.),
+    HourMeasurement("nine", numpy.asarray([-4.39, -4.25, -3.69, -2.6, -1.44])*-1.),
+    HourMeasurement("ten", numpy.asarray([-4.34, -4.21, -3.65, -2.57, -1.42])*-1.),
+    HourMeasurement("eleven", numpy.asarray([-4.26, -4.13, -3.59, -2.54, -1.41])*-1.),
+]
+
+pf = PlateProfile(hourMeasList1, plate=8770)
 dp = DuPontFocalProfile()
 fpf = FocalPlaneFitter(dp, pf, plate=8770)
 fpf.plotSurfErr()
+# fpf.plot2Surf()
 
 plt.show()
 
