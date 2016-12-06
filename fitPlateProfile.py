@@ -15,6 +15,7 @@ from matplotlib.mlab import griddata
 MMPerInch = 25.4
 #FocalRad = 9000 # MM, du Pont telescope focal plane radius of curvature.
 MeasRadii = numpy.asarray([0.8, 3.8, 5.8, 7.8, 10.8]) * MMPerInch
+MeasRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
 MeasRadiiCurtis = numpy.asarray([25.4, 76.2, 152.4, 228.6, 279.4])
 DirThetaMapCard = OrderedDict((
     ("N", 0.),
@@ -120,18 +121,18 @@ class RadialSurfaceProfile(object):
         plotRadialSurface(R, T, Z, plate=self.plate)
 
 class DuPontFocalProfile(RadialSurfaceProfile):
-    focalRadius = 9000 # mm
+    focalRadius = 8800 # mm
     # zOffset is z distance from spherical origin to chord/surface describing
     # the plate location in the focal plane
-    zOffsetToPlate = numpy.sqrt(focalRadius**2 - numpy.max(MeasRadiiCurtis)**2)
+    zOffsetToPlate = numpy.sqrt(focalRadius**2 - numpy.max(MeasRadii)**2)
     def __init__(self):
         # default to cardinal direction thetas (matching plate meas directions)
         # and radii matching plate profilometry radius measurements
         thetas = numpy.asarray(DirThetaMapHour.values() + [2*numpy.pi]) # add 2pi for boundary conditions
-        zs = self.zRT(MeasRadiiCurtis, thetas)
+        zs = self.zRT(MeasRadii, thetas)
         # repeat zs for each theta
         zs = numpy.tile(zs, (len(thetas), 1))
-        RadialSurfaceProfile.__init__(self, MeasRadiiCurtis, thetas, zs)
+        RadialSurfaceProfile.__init__(self, MeasRadii, thetas, zs)
 
     def zRT(self, radius, theta):
         # return z position from r, theta
@@ -141,7 +142,7 @@ class Measurement(object):
     def __init__(self, direction, measList, dirThetaMap, toMM = False):
         # meas least must be in increasing radius
         # measurements in inches (converted to mm)
-        assert len(measList) == len(MeasRadiiCurtis)
+        assert len(measList) == len(MeasRadii)
         assert direction in dirThetaMap.keys(), direction + "  " + str(dirThetaMap.keys())
         self.direction = direction
         self.theta = dirThetaMap[direction]
@@ -175,7 +176,7 @@ class PlateProfile(RadialSurfaceProfile):
         self.measurementList = measurementList
         thetas = numpy.asarray([cml.theta for cml in self.measurementList])
         zs = numpy.asarray([cml.measList for cml in self.measurementList]).squeeze()
-        RadialSurfaceProfile.__init__(self, MeasRadiiCurtis, thetas, zs)
+        RadialSurfaceProfile.__init__(self, MeasRadii, thetas, zs)
 
 class FocalPlaneFitter(object):
     def __init__(self, targetProfile, measuredProfile, plate=None):
@@ -397,9 +398,254 @@ hourMeasList1 = [
     HourMeasurement("eleven", numpy.asarray([-4.26, -4.13, -3.59, -2.54, -1.41])*-1.),
 ]
 
-pf = PlateProfile(hourMeasList1, plate=8770)
+#july run
+cardMeasList11 = [
+    CardinalMeasurement("N", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("NE", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("E", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("SE", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("S", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("SW", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("W", [.2840, .2465, .2125, .1705, .0765]),
+    CardinalMeasurement("NW", [.2840, .2465, .2125, .1705, .0765]),
+]
+#july run
+cardMeasList12 = [
+    CardinalMeasurement("N", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("NE", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("E", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("SE", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("S", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("SW", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("W", [.3025, .2560, .2170, .1710, .0755]),
+    CardinalMeasurement("NW", [.3025, .2560, .2170, .1710, .0755]),
+]
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("NE", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("E", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("SE", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("S", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("SW", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("W", [.2950, .2520, .2140, .168, .0725]),
+    CardinalMeasurement("NW", [.2950, .2520, .2140, .168, .0725]),
+]
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("NE", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("E", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("SE", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("S", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("SW", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("W", [.290, .2485, .2120, .1675, .0725]),
+    CardinalMeasurement("NW", [.290, .2485, .2120, .1675, .0725]),
+]
+
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("NE", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("E", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("SE", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("S", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("SW", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("W", [.2830, .2460, .2120, .1690, .0750]),
+    CardinalMeasurement("NW", [.2830, .2460, .2120, .1690, .0750]),
+]
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("NE", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("E", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("SE", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("S", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("SW", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("W", [.280, .2445, .2110, .1685, .0750]),
+    CardinalMeasurement("NW", [.280, .2445, .2110, .1685, .0750]),
+]
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("NE", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("E", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("SE", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("S", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("SW", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("W", [.2700, .2380, .2075, .1665, .0745]),
+    CardinalMeasurement("NW", [.2700, .2380, .2075, .1665, .0745]),
+]
+
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("NE", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("E", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("SE", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("S", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("SW", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("W", [.2600, .2320, .2035, .1640, .0740]),
+    CardinalMeasurement("NW", [.2600, .2320, .2035, .1640, .0740]),
+]
+
+cardMeasList12 = [
+    CardinalMeasurement("N", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("NE", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("E", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("SE", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("S", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("SW", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("W", [.270, .2380, .2065, .1655, .0735]),
+    CardinalMeasurement("NW", [.270, .2380, .2065, .1655, .0735]),
+]
+
+# oct eng, first plate, not torqued
+
+cardMeasList13 = [
+    CardinalMeasurement("N", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("NE", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("E", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("SE", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("S", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("SW", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("W", [.2750, .2210, .1785, .1335, .0525]),
+    CardinalMeasurement("NW", [.2750, .2210, .1785, .1335, .0525]),
+]
+
+# same plate, torqued
+
+cardMeasList14 = [
+    CardinalMeasurement("N", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("NE", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("E", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("SE", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("S", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("SW", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("W", [.265, .217, .179, .135, .054]),
+    CardinalMeasurement("NW", [.265, .217, .179, .135, .054]),
+]
+
+# back off middle
+cardMeasList15 = [
+    CardinalMeasurement("N", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("NE", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("E", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("SE", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("S", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("SW", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("W", [.260, .214, .177, .133 ,.054]),
+    CardinalMeasurement("NW", [.260, .214, .177, .133 ,.054]),
+]
+
+# replugged oct plate
+
+cardMeasList15 = [
+    CardinalMeasurement("N", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("NE", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("E", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("SE", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("S", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("SW", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("W", [.27, .2220, .1825, .1370, .0550]),
+    CardinalMeasurement("NW", [.27, .2220, .1825, .1370, .0550]),
+]
+
+
+# new / black bending rings
+
+# cardMeasList15 = [
+#     CardinalMeasurement("N", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("NE", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("E", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("SE", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("S", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("SW", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("W", [.1545, .1365, .1155, .0875, .0340]),
+#     CardinalMeasurement("NW", [.1545, .1365, .1155, .0875, .0340]),
+# ]
+
+cardMeasList15 = [
+    CardinalMeasurement("N", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("NE", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("E", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("SE", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("S", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("SW", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("W", [.2755, .2415, .2105, .1710, .079]),
+    CardinalMeasurement("NW", [.2755, .2415, .2105, .1710, .079]),
+]
+
+
+nicksnominals = [
+    CardinalMeasurement("N", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("NE", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("E", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("SE", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("S", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("SW", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("W", [.2202, .2007, .1733, .1343, .0542]),
+    CardinalMeasurement("NW", [.2202, .2007, .1733, .1343, .0542]),
+]
+
+november1 = [
+    CardinalMeasurement("N", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("NE", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("E", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("SE", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("S", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("SW", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("W", [.2530, .2285, .2030, .1675, .0790]),
+    CardinalMeasurement("NW", [.2530, .2285, .2030, .1675, .0790]),
+]
+
+obstest1 = [
+    CardinalMeasurement("N", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("NE", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("E", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("SE", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("S", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("SW", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("W", [.231, .2070, 0.1770, .1375, .0565]),
+    CardinalMeasurement("NW", [.231, .2070, 0.1770, .1375, .0565]),
+]
+
+obstest1_weird = [
+    CardinalMeasurement("N", [.2285, .2045, .1740, .1350, .0555]),
+    CardinalMeasurement("NE", [.2285, .2045, .1740, .1350, .0555]),
+    CardinalMeasurement("E", [.2440, .2235, .2000, .1660, .0780]),
+    CardinalMeasurement("SE", [.2440, .2235, .2000, .1660, .0780]),
+    CardinalMeasurement("S", [.2175, .1870, .1625, .1315, .0615]),
+    CardinalMeasurement("SW", [.2175, .1870, .1625, .1315, .0615]),
+    CardinalMeasurement("W", [.2260, .1905, .1610, .1235, .0500]),
+    CardinalMeasurement("NW", [.2260, .1905, .1610, .1235, .0500]),
+]
+
+obstest2 = [
+    CardinalMeasurement("N", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("NE", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("E", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("SE", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("S", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("SW", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("W", [.2500, .2220, .1925, .1535, .0675]),
+    CardinalMeasurement("NW", [.2500, .2220, .1925, .1535, .0675]),
+]
+
+obstest3 = [
+    CardinalMeasurement("N", [.2500, .2210, .1945, .1585, .0735]),
+    CardinalMeasurement("NE", [.2500, .2210, .1945, .1585, .0735]),
+    CardinalMeasurement("E", [.2405, .2135, .1895, .1560, .0735]),
+    CardinalMeasurement("SE", [.2405, .2135, .1895, .1560, .0735]),
+    CardinalMeasurement("S", [.2570, .2295, .2, .1605, .0720]),
+    CardinalMeasurement("SW", [.2570, .2295, .2, .1605, .0720]),
+    CardinalMeasurement("W", [.2445, .2215, .1965, .1620, .0765]),
+    CardinalMeasurement("NW", [.2445, .2215, .1965, .1620, .0765]),
+]
+
+pf = PlateProfile(obstest3, plate=9104)
 dp = DuPontFocalProfile()
-fpf = FocalPlaneFitter(dp, pf, plate=8770)
+fpf = FocalPlaneFitter(dp, pf, plate=9104)
 fpf.plotSurfErr()
 # fpf.plot2Surf()
 
