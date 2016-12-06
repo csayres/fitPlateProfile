@@ -643,7 +643,18 @@ obstest3 = [
     CardinalMeasurement("NW", [.2445, .2215, .1965, .1620, .0765]),
 ]
 
-pf = PlateProfile(obstest3, plate=9104)
+december = [
+    CardinalMeasurement("N", [.2500, .2180, .1890, .1515, .0685]),
+    CardinalMeasurement("NE", [.2480, .2175, .1895, .1520, .0685]),
+    CardinalMeasurement("E", [.2555, .2255, .1955, .1570, .0710]),
+    CardinalMeasurement("SE", [.2620, .2325, .2020, .1620, .0720]),
+    CardinalMeasurement("S", [.2535, .2270, .2000, .1635, .0765]),
+    CardinalMeasurement("SW", [.2475, .2205, .945, .1600, .0760]),
+    CardinalMeasurement("W", [.2500, .2185, .1905, .1545, .0715]),
+    CardinalMeasurement("NW", [.2535, .2200, .1905, .1530, .0690]),
+]
+
+pf = PlateProfile(december, plate=9104)
 dp = DuPontFocalProfile()
 fpf = FocalPlaneFitter(dp, pf, plate=9104)
 fpf.plotSurfErr()
