@@ -654,7 +654,63 @@ december = [
     CardinalMeasurement("NW", [.2535, .2200, .1905, .1530, .0690]),
 ]
 
-pf = PlateProfile(december, plate=9104)
+december2 = [
+    CardinalMeasurement("N", [.2400, .2120, .1840, .1465, .0645]),
+    CardinalMeasurement("NE", [.2400, .2120, .1840, .1465, .0645]),
+    CardinalMeasurement("E", [.2370, .2055, .1770, .1405, .0625]),
+    CardinalMeasurement("SE", [.2370, .2055, .1770, .1405, .0625]),
+    CardinalMeasurement("S", [.2365, .2055, .1775, .1405, .0620]),
+    CardinalMeasurement("SW", [.2365, .2055, .1775, .1405, .0620]),
+    CardinalMeasurement("W", [.2415, .2120, .1810, .1425, .0615]),
+    CardinalMeasurement("NW", [.2415, .2120, .1810, .1425, .0615]),
+]
+
+december3 = [
+    CardinalMeasurement("N", [.2500, .2260, .1995, .1625, .0750]),
+    CardinalMeasurement("NE", [.2500, .2260, .1995, .1625, .0750]),
+    CardinalMeasurement("E", [.2450, .2195, .1910, .1535, .0685]),
+    CardinalMeasurement("SE", [.2450, .2195, .1910, .1535, .0685]),
+    CardinalMeasurement("S", [.2415, .2110, .1835, .1480, .0675]),
+    CardinalMeasurement("SW", [.2415, .2110, .1835, .1480, .0675]),
+    CardinalMeasurement("W", [.2405, .2165, .1935, .1610, .0775]),
+    CardinalMeasurement("NW", [.2405, .2165, .1935, .1610, .0775]),
+]
+
+december4 = [
+    CardinalMeasurement("N", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("NE", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("E", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("SE", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("S", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("SW", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("W", [.2390, .2195, .1960, .1625, .0775]),
+    CardinalMeasurement("NW", [.2390, .2195, .1960, .1625, .0775]),
+]
+
+# the one below was really good
+december4_1 = [
+    CardinalMeasurement("N", [.2500, .2260, .2000, .1645, .0780]),
+    CardinalMeasurement("NE", [.2510, .2260, .2005, .1645, .0775]),
+    CardinalMeasurement("E", [.2500, .2255, .2005, .1655, .0780]),
+    CardinalMeasurement("SE", [.2470, .2215, .1965, .1620, .0765]),
+    CardinalMeasurement("S", [.2420, .2150, .1895, .1565, .0760]),
+    CardinalMeasurement("SW", [.2425, .2140, .1895, .1560, .0740]),
+    CardinalMeasurement("W", [.2455, .2195, .1955, .1620, .0770]),
+    CardinalMeasurement("NW", [.2480, .2235, .1985, .1640, .0775]),
+]
+
+december5 = [
+    CardinalMeasurement("N", [.2500, .2180, .1905, .1550, .0730]),
+    CardinalMeasurement("NE", [.2500, .2180, .1905, .1550, .0730]),
+    CardinalMeasurement("E", [.2595, .2285, .1985, .1585, .0705]),
+    CardinalMeasurement("SE", [.2595, .2285, .1985, .1585, .0705]),
+    CardinalMeasurement("S", [.2555, .2270, .1990, .1630, .0760]),
+    CardinalMeasurement("SW", [.2555, .2270, .1990, .1630, .0760]),
+    CardinalMeasurement("W", [.2660, .2385, .2110, .1730, .0810]),
+    CardinalMeasurement("NW", [.2660, .2385, .2110, .1730, .0810]),
+]
+
+pf = PlateProfile(december5, plate=9104)
 dp = DuPontFocalProfile()
 fpf = FocalPlaneFitter(dp, pf, plate=9104)
 fpf.plotSurfErr()
