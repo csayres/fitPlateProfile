@@ -5,12 +5,16 @@ import copy
 import numpy
 import numpy.linalg
 from collections import OrderedDict
+import itertools
 
 import scipy.interpolate
+import scipy.spatial
+from scipy.interpolate import interp1d
 from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
+import matplotlib.tri as mtri
 
 MMPerInch = 25.4
 #FocalRad = 9000 # MM, du Pont telescope focal plane radius of curvature.
@@ -710,11 +714,134 @@ december5 = [
     CardinalMeasurement("NW", [.2660, .2385, .2110, .1730, .0810]),
 ]
 
-pf = PlateProfile(december5, plate=9104)
-dp = DuPontFocalProfile()
-fpf = FocalPlaneFitter(dp, pf, plate=9104)
-fpf.plotSurfErr()
-# fpf.plot2Surf()
+december6 = [
+    CardinalMeasurement("N", [.2500, .2175, .1900, .1545, .0730]),
+    CardinalMeasurement("NE", [.2500, .2175, .1900, .1545, .0730]),
+    CardinalMeasurement("E", [.2610, .2260, .1945, .1545, .0685]),
+    CardinalMeasurement("SE", [.2610, .2260, .1945, .1545, .0685]),
+    CardinalMeasurement("S", [.2570, .2285, .1990, .1610, .0740]),
+    CardinalMeasurement("SW", [.2570, .2285, .1990, .1610, .0740]),
+    CardinalMeasurement("W", [.2650, .2355, .2070, .1685, .0785]),
+    CardinalMeasurement("NW", [.2650, .2355, .2070, .1685, .0785]),
+]
+
+december7 = [
+    CardinalMeasurement("N", [.2500, .2250, .1990, .1635, .0765]),
+    CardinalMeasurement("NE", [.2500, .2250, .1990, .1635, .0765]),
+    CardinalMeasurement("E", [.2410, .2140, .1890, .1560, .0750]),
+    CardinalMeasurement("SE", [.2410, .2140, .1890, .1560, .0750]),
+    CardinalMeasurement("S", [.2455, .2205, .1970, .1635, .0785]),
+    CardinalMeasurement("SW", [.2455, .2205, .1970, .1635, .0785]),
+    CardinalMeasurement("W", [.2490, .2245, .1990, .1635, .0770]),
+    CardinalMeasurement("NW", [.2490, .2245, .1990, .1635, .0770]),
+]
+
+december8 = [
+    CardinalMeasurement("N", [.2460, .2165, .1895, .1540, .0720]),
+    CardinalMeasurement("NE", [.2415, .2155, .1910, .1575, .0750]),
+    CardinalMeasurement("E", [.2430, .2175, .1935, .1600, .0760]),
+    CardinalMeasurement("SE", [.2430, .2190, .1945, .1610, .0765]),
+    CardinalMeasurement("S", [.2485, .2235, .1965, .1600, .0730]),
+    CardinalMeasurement("SW", [.2440, .2195, .1925, .1560, .0705]),
+    CardinalMeasurement("W", [.2465, .2190, .1905, .1540, .0685]),
+    CardinalMeasurement("NW", [.2425, .2140, .1870, .1515, .0695]),
+]
+
+december9 = [
+    CardinalMeasurement("N", [.2400, .2110, .1820, .1450, .0640]),
+    CardinalMeasurement("NE", [.2295, .2040, .1790, .1455, .0665]),
+    CardinalMeasurement("E", [.2345, .2090, .1840, .1495, .0685]),
+    CardinalMeasurement("SE", [.2455, .2200, .1925, .1545, .0685]),
+    CardinalMeasurement("S", [.2425, .2185, .1920, .1550, .0700]),
+    CardinalMeasurement("SW", [.2310, .2095, .1855, .1520, .0710]),
+    CardinalMeasurement("W", [.2345, .2110, .1860, .1510, .0690]),
+    CardinalMeasurement("NW", [.2450, .2175, .1885, .1495, .0650]),
+]
+
+def doOld(cardMeasList):
+    pf = PlateProfile(cardMeasList, plate=9104)
+    dp = DuPontFocalProfile()
+    fpf = FocalPlaneFitter(dp, pf, plate=9104)
+    fpf.plotSurfErr()
+    # fpf.plot2Surf()
+
+def plateSurfPlot(x,y,z):
+    fig = plt.figure()
+    ax = fig.gca(projection="3d")
+    ax.plot_trisurf(x, y, z, cmap=cm.coolwarm)
+    ax.set_zlabel("focal plane error (mm)")
+    ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
+
+def doNewInterp(cardMeasList):
+    # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
+    # get x,y positions for r, thetas
+    cardMeasList.sort(key=lambda x: x.theta)
+    rawThetas = numpy.array([cc.theta for cc in cardMeasList] + [2*numpy.pi])
+    rawMeas = numpy.array([cc.measList.squeeze() for cc in cardMeasList] + [cardMeasList[0].measList.squeeze()])
+    rawRadii = MeasRadii
+    thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], 40)
+    radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], 20)
+    radInterpList = []
+    for radialMeas in rawMeas:
+        spl = scipy.interpolate.spline(rawRadii, radialMeas, radiiInterp)
+        radInterpList.append(spl)
+    radInterpList = numpy.asarray(radInterpList).T
+    fullInterp = []
+    for radInterp  in radInterpList:
+        spl = scipy.interpolate.spline(rawThetas, radInterp, thetaInterp)
+        fullInterp.append(spl)
+    fullInterp = numpy.array(fullInterp).T
+    xInterp = []
+    yInterp = []
+    measInterp = []
+    model = []
+    for theta, interpMeas in itertools.izip(thetaInterp, fullInterp):
+        # theta - 90 to make tab at -y on plot, N == tab direction == 0 theta.
+        # theta increases in the normal way counter clockwise from x axis
+        xInterp.append(numpy.cos(theta)*radiiInterp)
+        yInterp.append(numpy.sin(theta)*radiiInterp)
+        measInterp.append(interpMeas)
+        model.append(numpy.sqrt(DuPontFocalProfile.focalRadius**2-radiiInterp**2))
+    xInterp = numpy.array(xInterp).flatten()
+    yInterp = numpy.array(yInterp).flatten()
+    measInterp = numpy.array(measInterp).flatten()
+    model = numpy.array(model).flatten()
+    err = model - measInterp
+    err = err - numpy.mean(err)
+    plateSurfPlot(xInterp, yInterp, err)
+
+
+def doNewRaw(cardMeasList):
+    x = [] #mm
+    y = [] #mm
+    meas = [] #mm (CardMeas converts from inches)
+    nom = [] #mm
+    for cc in cardMeasList:
+        for zPos, radius in itertools.izip(list(cc.measList.squeeze()), list(MeasRadii.squeeze())):
+
+            # import pdb; pdb.set_trace()
+            x.append(radius*numpy.cos(cc.theta))
+            y.append(radius*numpy.sin(cc.theta))
+            meas.append(zPos)
+            nom.append(numpy.sqrt(DuPontFocalProfile.focalRadius**2-radius**2))
+    x = numpy.asarray(x)
+    y = numpy.asarray(y)
+    meas = numpy.asarray(meas)
+    model = numpy.asarray(nom)
+    err = model - meas
+    err = err - numpy.mean(err)
+
+    # pts = numpy.vstack([x,y]).T
+    # tess = scipy.spatial.Delaunay(pts)
+    # x = tess.points[:,0]
+    # y = tess.points[:,1]
+    # tri = tess.vertices
+    # triang = mtri.Triangulation(x=pts[:,0], y=pts[:,1], triangles=tri)
+    plateSurfPlot(x,y,err)
+
+
+# doOld(december9)
+doNewInterp(december9)
+# doNewRaw(december9)
 
 plt.show()
-
