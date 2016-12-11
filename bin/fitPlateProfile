@@ -1,0 +1,65 @@
+#!/usr/bin/env python
+import os
+import sys
+import argparse
+
+from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, DirThetaMapCard
+
+class ParseError(Exception):
+    pass
+
+def parseRadialMeas(rawInputLine):
+    try:
+        rawInputLine = rawInputLine.strip()
+        measStrs = rawInputLine.split()
+        assert len(measStrs)==5
+        measStrs = ["."+strMeas for strMeas in measStrs]
+        # convert to floats
+        radialFloats = [float(meas) for meas in measStrs]
+    except:
+        raise ParseError("Could not parse: %s"%rawInputLine)
+    return radialFloats
+
+
+def profile(args):
+    if not args.plateID:
+        plateID = int(raw_input("plateID: "))
+    else:
+        plateID = int(args.plateID)
+    if not args.cartID:
+        cartID = int(raw_input("cartID: "))
+    else:
+        cartID = int(args.cartID)
+    print("Enter radial meaurements space separated with no decimal point.")
+    print("Record from plate center to plate edge.")
+    print("Begin with North ==> probes towards tab.")
+    cardinalMeasurementList = []
+    cardinalDirections = DirThetaMapCard.keys() # cardinal directions
+    for measDir in cardinalDirections:
+        while True:
+            try:
+                radialFloats = parseRadialMeas(raw_input("%s: "%measDir))
+                cardinalMeasurementList.append(CardinalMeasurement(measDir, radialFloats))
+            except ParseError as e:
+                print(e)
+            else:
+                break
+
+    doNewInterp(cardinalMeasurementList)
+    plt.show()
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        prog=os.path.basename(sys.argv[0]),
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+        description="Profile a plate."
+        )
+    parser.add_argument("--plateID", type=int, required=False, help="Plate ID")
+    parser.add_argument("--cartID", type=int, required=False, help="Cart ID")
+    args = parser.parse_args()
+    profile(args)
+
+if __name__ == '__main__':
+    main()
+

@@ -840,8 +840,11 @@ def doNewRaw(cardMeasList):
     plateSurfPlot(x,y,err)
 
 
-# doOld(december9)
-doNewInterp(december9)
-# doNewRaw(december9)
 
-plt.show()
+if __name__ == "__main__":
+    # doOld(december9)
+    doNewInterp(december9)
+    # doNewRaw(december9)
+    plt.show()
+
+# plt.show()
