@@ -14,10 +14,10 @@
 # the second line if needed, but most products should
 # leave this alone.
 #
-proc ModulesHelp {{ }} {{
+proc ModulesHelp { } {
     global product version
     puts stderr "This module adds $product/$version to your environment."
-}}
+}
 #
 # These variables are used below.  The product variable should be set to
 # the name of the product and never changed.  The version variable will
@@ -26,7 +26,7 @@ proc ModulesHelp {{ }} {{
 # change it.
 #
 set product fitPlateProfile
-set version {version}
+set version git
 conflict $product
 #
 # The line below is another part of the Modules help system.  You can
@@ -43,15 +43,14 @@ module-whatis "Sets up $product/$version in your environment."
 # command.  An optional dependency is not followed by a prereq statement.
 #
 module load sdss_python_module
-
-
+# 
 #
 # ENVIRONMENT SECTION
 #
 # The PRODUCT_ROOT and PRODUCT_DIR variables are used to set other
 # environment variables, exported to the actual environment, by sdss4install
 #
-set PRODUCT_ROOT {root}
+set PRODUCT_ROOT /home/lcomapper/code
 set PRODUCT_DIR $PRODUCT_ROOT/$product/$version
 #
 # This line creates an environment variable pointing to the install
@@ -62,12 +61,11 @@ setenv [string toupper $product]_DIR $PRODUCT_DIR
 # The lines below set various other environment variables.  They assume the
 # template product layout.  These will be set or commented as needed by the
 # sdss4install script.
+prepend-path PATH $PRODUCT_DIR/bin
 #
-{needs_bin}prepend-path PATH $PRODUCT_DIR/bin
-{needs_python}prepend-path PYTHONPATH $PRODUCT_DIR/lib/{pyversion}/site-packages
-{needs_trunk_python}prepend-path PYTHONPATH $PRODUCT_DIR/python
-{needs_ld_lib}prepend-path LD_LIBRARY_PATH $PRODUCT_DIR/lib
-{needs_idl}prepend-path IDL_PATH +$PRODUCT_DIR/pro
+prepend-path PYTHONPATH $PRODUCT_DIR/python
+# prepend-path LD_LIBRARY_PATH $PRODUCT_DIR/lib
+# prepend-path IDL_PATH +$PRODUCT_DIR/pro
 #
 # Add any non-standard Module code below this point.
 #
