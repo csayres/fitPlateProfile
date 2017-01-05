@@ -772,13 +772,12 @@ def plateSurfPlot(x,y,z):
     ax.set_zlabel("focal plane error (mm)")
     ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
 
-def doNewInterp(cardMeasList):
+def doNewInterp(cardMeasList, rawRadii = MeasRadii):
     # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
     # get x,y positions for r, thetas
     cardMeasList.sort(key=lambda x: x.theta)
     rawThetas = numpy.array([cc.theta for cc in cardMeasList] + [2*numpy.pi])
     rawMeas = numpy.array([cc.measList.squeeze() for cc in cardMeasList] + [cardMeasList[0].measList.squeeze()])
-    rawRadii = MeasRadii
     thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], 40)
     radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], 20)
     radInterpList = []
