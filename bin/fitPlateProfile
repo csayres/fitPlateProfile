@@ -6,7 +6,7 @@ import numpy
 
 from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, DirThetaMapCard, MMPerInch
 
-MeasRadii = numpy.asarray([2, 3.75, 5.75, 7.75, 10.75]) * MMPerInch
+MeasRadii = numpy.asarray([1.75, 3.75, 5.75, 7.75, 10.75]) * MMPerInch
 
 class ParseError(Exception):
     pass
