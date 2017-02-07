@@ -13,7 +13,11 @@ MeasRadii = numpy.asarray([2, 3.75, 5.75, 7.75, 10.75]) * MMPerInch
 # telnet connection to terminal server
 PROF_HOST = "139.229.101.121"
 PROF_PORT = 10001
-TN = Telnet(PROF_HOST, PROF_PORT)
+try:
+    TN = Telnet(PROF_HOST, PROF_PORT)
+except:
+    print("Cannot connect to mitutoyo host!! Manual entry mandatory")
+    TN = None
 
 
 class ParseError(Exception):
