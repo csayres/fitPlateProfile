@@ -4,6 +4,7 @@ import sys
 import argparse
 import numpy
 from telnetlib import Telnet
+import glob
 
 from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, \
      DirThetaMapCard, MMPerInch, addProfilometry
@@ -85,7 +86,6 @@ def profile(args):
     if os.path.exists("test.png"):
         print("removing old pic.")
         os.remove("test.png")
-    plt.savefig("test.png")
     #plt.show()
     while True:
         user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
@@ -98,6 +98,16 @@ def profile(args):
         else:
             print("bad user input. try again.")
     mjd, fscanID = addProfilometry(plateID, cardinalMeasurementList)
+    # save image in /data
+    print("saving profile image for mjd: %i fscanId: %i plateId: %i"%(mjd, fscanID, plateID))
+    basePath = "/data/%s"%mjd
+    baseFile = "profile-%i-%i-%i"%(plateID, mjd, fscanID)
+    # any files exist?
+    existingFiles = glob.glob(os.path.join(basePath, baseFile+"*.png"))
+    nFiles = len(existingFiles)
+    profNum = nFiles + 1
+    filename = os.path.join(basePath, baseFile+"-%s.png"%(("%i"%profNum).zfill(2)))
+    plt.savefig(filename)
 
 
 
