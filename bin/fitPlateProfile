@@ -83,6 +83,7 @@ def profile(args):
                 break
 
     doNewInterp(cardinalMeasurementList, MeasRadii)
+    plt.show(block=False)
     while True:
         user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
         if user_input in ["yes", "y"]:
@@ -96,8 +97,8 @@ def profile(args):
     mjd, fscanID = addProfilometry(plateID, cardinalMeasurementList)
     # save image in /data
     print("saving profile image for mjd: %i fscanId: %i plateId: %i"%(mjd, fscanID, plateID))
-    basePath = "/data/%s"%mjd
-    baseFile = "profile-%i-%i-%i"%(plateID, mjd, fscanID)
+    basePath = "/data/mapper/%s"%mjd
+    baseFile = "profile-%i-%i-%s"%(plateID, mjd, ("%i"%fscanID).zfill(2))
     # any files exist?
     existingFiles = glob.glob(os.path.join(basePath, baseFile+"*.png"))
     nFiles = len(existingFiles)
