@@ -3,13 +3,38 @@ import os
 import sys
 import argparse
 import numpy
+from telnetlib import Telnet
 
-from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, DirThetaMapCard, MMPerInch
+from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, \
+     DirThetaMapCard, MMPerInch, addProfilometry
 
 MeasRadii = numpy.asarray([1.75, 3.75, 5.75, 7.75, 10.75]) * MMPerInch
 
+# telnet connection to terminal server
+PROF_HOST = "139.229.101.121"
+PROF_PORT = 10001
+TN = Telnet(PROF_HOST, PROF_PORT)
+
+
 class ParseError(Exception):
     pass
+
+def queryGauges():
+    radialFloats = []
+    for gaugeNum in range(1,6):
+        TN.write("D0%i\r\n"%gaugeNum)
+        gaugeOutput = TN.read_until("\r", 1)
+        try:
+            gauge, val = gaugeOutput.strip().split(":")
+            gauge = int(gauge)
+            val = float(val)
+            assert gauge == gaugeNum
+            print("gauge %i: %.4f"%(gauge, val))
+        except:
+            raise ParseError("Failed to parse gauge %i output: %s"%(gaugeNum, gaugeOutput))
+        radialFloats.append(val)
+    return radialFloats
+
 
 def parseRadialMeas(rawInputLine):
     try:
@@ -29,10 +54,8 @@ def profile(args):
         plateID = int(raw_input("plateID: "))
     else:
         plateID = int(args.plateID)
-    if not args.cartID:
-        cartID = int(raw_input("cartID: "))
-    else:
-        cartID = int(args.cartID)
+    print("Press 'r' key to automatically record gauge values")
+    print("---OR---")
     print("Enter radial meaurements space separated with no decimal point.")
     print("Record from plate center to plate edge.")
     print("Begin with North ==> probes towards tab.")
@@ -41,7 +64,13 @@ def profile(args):
     for measDir in cardinalDirections:
         while True:
             try:
-                radialFloats = parseRadialMeas(raw_input("%s: "%measDir))
+                userInput = raw_input("%s: "%measDir)
+                userInput = userInput.strip().lower()
+                if userInput == "r":
+                    # query for values
+                    radialFloats = queryGauges()
+                else:
+                    radialFloats = parseRadialMeas(userInput)
                 cardinalMeasurementList.append(CardinalMeasurement(measDir, radialFloats))
             except ParseError as e:
                 print(e)
@@ -50,6 +79,19 @@ def profile(args):
 
     doNewInterp(cardinalMeasurementList, MeasRadii)
     plt.show()
+    while True:
+        user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
+        if user_input in ["yes", "y"]:
+            print("Saving profile data to platedb")
+            break
+        elif user_input in ["no", "n"]:
+            print("NOT saving profile to platedb, exiting...")
+            sys.exit()
+        else:
+            print("bad user input. try again.")
+    mjd, fscanID = addProfilometry(plateID, cardinalMeasurementList)
+
+
 
 
 def main(argv=None):
@@ -58,8 +100,7 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Profile a plate."
         )
-    parser.add_argument("--plateID", type=int, required=False, help="Plate ID")
-    parser.add_argument("--cartID", type=int, required=False, help="Cart ID")
+    parser.add_argument("--plateID", type=int, required=False, help="Cart ID")
     args = parser.parse_args()
     profile(args)
 
