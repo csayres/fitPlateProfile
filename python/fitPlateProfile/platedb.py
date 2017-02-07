@@ -13,7 +13,7 @@ def getMeasureDict(cardMeasList):
     """
     outDict = OrderedDict()
     for direction, cardMeas in itertools.izip(DirThetaMapCard.keys(), cardMeasList):
-        outDict[direction] = cardMeas.measList
+        outDict[direction] = list(cardMeas.measList.flatten())
     # logMsg(outDict)
     return outDict
 
