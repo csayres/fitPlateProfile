@@ -82,7 +82,11 @@ def profile(args):
                 break
 
     doNewInterp(cardinalMeasurementList, MeasRadii)
-    plt.show()
+    if os.path.exists("test.png"):
+        print("removing old pic.")
+        os.remove("test.png")
+    plt.savefig("test.png")
+    #plt.show()
     while True:
         user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
         if user_input in ["yes", "y"]:
