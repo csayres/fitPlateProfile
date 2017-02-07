@@ -771,7 +771,6 @@ def plateSurfPlot(x,y,z):
     ax.plot_trisurf(x, y, z, cmap=cm.coolwarm)
     ax.set_zlabel("focal plane error (mm)")
     ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
-    plt.clim(-0.1, 0.1)
 
 def doNewInterp(cardMeasList, rawRadii = MeasRadii):
     # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
