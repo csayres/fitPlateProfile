@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import itertools
 
-from sdss.internal.database.connections import LCODatabaseAdminTunnelConnection
+from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
 from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
 from fitPlateProfile import DirThetaMapCard
