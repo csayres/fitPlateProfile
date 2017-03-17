@@ -104,7 +104,8 @@ def profile(args):
     nFiles = len(existingFiles)
     profNum = nFiles + 1
     filename = os.path.join(basePath, baseFile+"-%s.png"%(("%i"%profNum).zfill(2)))
-    plt.savefig(filename)
+    print("LCOHACK!!!! not saving image until /data write access is restored.")
+    # plt.savefig(filename)
 
 
 
