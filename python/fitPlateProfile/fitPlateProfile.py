@@ -16,6 +16,7 @@ import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
 import matplotlib.tri as mtri
 
+ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
 #FocalRad = 9000 # MM, du Pont telescope focal plane radius of curvature.
 MeasRadii = numpy.asarray([0.8, 3.8, 5.8, 7.8, 10.8]) * MMPerInch
@@ -156,8 +157,8 @@ class Measurement(object):
 
 
 class CardinalMeasurement(Measurement):
-    def __init__(self, direction, measList):
-        Measurement.__init__(self, direction, measList, DirThetaMapCard, toMM = True)
+    def __init__(self, direction, measList, toMM = True):
+        Measurement.__init__(self, direction, measList, DirThetaMapCard, toMM = toMM)
 
 class HourMeasurement(Measurement):
     def __init__(self, direction, measList):
@@ -768,7 +769,7 @@ def doOld(cardMeasList):
 def plateSurfPlot(x,y,z):
     fig = plt.figure()
     ax = fig.gca(projection="3d")
-    ax.plot_trisurf(x, y, z, cmap=cm.coolwarm)
+    ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
     ax.set_zlabel("focal plane error (mm)")
     ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
 
@@ -778,6 +779,7 @@ def doNewInterp(cardMeasList, rawRadii = MeasRadii):
     cardMeasList.sort(key=lambda x: x.theta)
     rawThetas = numpy.array([cc.theta for cc in cardMeasList] + [2*numpy.pi])
     rawMeas = numpy.array([cc.measList.squeeze() for cc in cardMeasList] + [cardMeasList[0].measList.squeeze()])
+    # raw meas is 2D array ra
     thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], 40)
     radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], 20)
     radInterpList = []
@@ -794,6 +796,9 @@ def doNewInterp(cardMeasList, rawRadii = MeasRadii):
     yInterp = []
     measInterp = []
     model = []
+    areaUnits = [] # for determining percent of plate out of spec
+    errorUnits = [] # for determining percent of plate out of spec
+    ccc = 0
     for theta, interpMeas in itertools.izip(thetaInterp, fullInterp):
         # theta - 90 to make tab at -y on plot, N == tab direction == 0 theta.
         # theta increases in the normal way counter clockwise from x axis
@@ -801,13 +806,33 @@ def doNewInterp(cardMeasList, rawRadii = MeasRadii):
         yInterp.append(numpy.sin(theta)*radiiInterp)
         measInterp.append(interpMeas)
         model.append(numpy.sqrt(DuPontFocalProfile.focalRadius**2-radiiInterp**2))
+        # for determining percent of plate out of spec
+        if theta < 2*numpy.pi:
+            print("theta", theta, "ccc", ccc)
+            ccc += 1
+            # don't count last 2pi, it was added to ensure the spline 0==2pi
+            for rad1, rad2, measurement in itertools.izip(radiiInterp[:-1], radiiInterp[1:], interpMeas[:-1]):
+                print("rad1, rad2 %.4f %.4f"%(rad1, rad2))
+                errorUnits.append(numpy.sqrt(DuPontFocalProfile.focalRadius**2-rad1**2) - measurement)
+                areaUnits.append(numpy.pi*(rad2**2-rad1**2)/39.0) # 40 for interpolated theta
     xInterp = numpy.array(xInterp).flatten()
     yInterp = numpy.array(yInterp).flatten()
     measInterp = numpy.array(measInterp).flatten()
     model = numpy.array(model).flatten()
     err = model - measInterp
-    err = err - numpy.mean(err)
+    err = err - numpy.mean(err) # maybe use median?
     plateSurfPlot(xInterp, yInterp, err)
+    errorUnits = numpy.asarray(errorUnits)
+    errorUnits = errorUnits - numpy.mean(errorUnits)
+    areaUnits = numpy.asarray(areaUnits)
+    #determine out of specness
+    errorUnits = numpy.abs(errorUnits)
+    outOfSpecInds = numpy.argwhere(errorUnits>0.2)
+    areaOutOfSpec = numpy.sum(areaUnits[outOfSpecInds])
+    totalArea = numpy.sum(areaUnits)
+    percentOutOfSpec = areaOutOfSpec/totalArea * 100
+    print("percent of plate out of spec: %.2f"%percentOutOfSpec)
+    return areaUnits, errorUnits
 
 
 def doNewRaw(cardMeasList):
