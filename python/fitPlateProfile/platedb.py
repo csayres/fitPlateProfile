@@ -2,17 +2,18 @@
 from collections import OrderedDict
 import itertools
 
-from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
-from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+if False:
+    from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
-from fitPlateProfile import DirThetaMapCard
+from fitPlateProfile import DuPontMeasurement
 
 def getMeasureDict(cardMeasList):
     """List of CardinalMeasurement objects
     in order of directionList
     """
     outDict = OrderedDict()
-    for direction, cardMeas in itertools.izip(DirThetaMapCard.keys(), cardMeasList):
+    for direction, cardMeas in itertools.izip(DuPontMeasurement.dirThetaMap.keys(), cardMeasList):
         outDict[direction] = list(cardMeas.measList.flatten())
     # logMsg(outDict)
     return outDict

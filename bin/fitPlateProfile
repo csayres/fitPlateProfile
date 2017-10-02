@@ -2,43 +2,10 @@
 import os
 import sys
 import argparse
-import numpy
-from telnetlib import Telnet
 import glob
 
-from fitPlateProfile import CardinalMeasurement, doNewInterp, plt, \
-     DirThetaMapCard, MMPerInch, addProfilometry
-
-MeasRadii = numpy.asarray([1.75, 3.75, 5.75, 7.75, 10.75]) * MMPerInch
-
-# telnet connection to terminal server
-PROF_HOST = "10.1.1.35"
-PROF_PORT = 10001
-try:
-    TN = Telnet(PROF_HOST, PROF_PORT)
-except:
-    print("Cannot connect to mitutoyo host!! Manual entry mandatory")
-    TN = None
-
-
-class ParseError(Exception):
-    pass
-
-def queryGauges():
-    radialFloats = []
-    for gaugeNum in range(1,6):
-        TN.write("D0%i\r\n"%gaugeNum)
-        gaugeOutput = TN.read_until("\r", 1)
-        try:
-            gauge, val = gaugeOutput.strip().split(":")
-            gauge = int(gauge)
-            val = float(val)
-            assert gauge == gaugeNum
-            print("gauge %i: %.4f"%(gauge, val))
-        except:
-            raise ParseError("Failed to parse gauge %i output: %s"%(gaugeNum, gaugeOutput))
-        radialFloats.append(val)
-    return radialFloats
+from fitPlateProfile import DuPontMeasurement, doNewInterp, plt, \
+     MMPerInch, addProfilometry, MitutoyoConnection
 
 
 def parseRadialMeas(rawInputLine):
@@ -50,7 +17,7 @@ def parseRadialMeas(rawInputLine):
         # convert to floats
         radialFloats = [float(meas) for meas in measStrs]
     except:
-        raise ParseError("Could not parse: %s"%rawInputLine)
+        raise RuntimeError("Could not parse: %s"%rawInputLine)
     return radialFloats
 
 
@@ -63,26 +30,30 @@ def profile(args):
     print("---OR---")
     print("Enter radial meaurements space separated with no decimal point.")
     print("Record from plate center to plate edge.")
-    print("Begin with North ==> probes towards tab.")
-    cardinalMeasurementList = []
-    cardinalDirections = DirThetaMapCard.keys() # cardinal directions
-    for measDir in cardinalDirections:
+    print("Begin with Measurement Postion 1 ==> probes towards tab.")
+    print("Continue measuring counter clockwise from the tab in increments of 45 degrees.")
+    duPontMeasurementList = []
+    measurementDirections = DuPontMeasurement.dirThetaMap.keys() # measurement positions
+    mitutoyoConnection = MitutoyoConnection()
+    for measDir in measurementDirections:
         while True:
             try:
-                userInput = raw_input("%s: "%measDir)
+                userInput = raw_input("Measurement position %i: "%measDir)
                 userInput = userInput.strip().lower()
                 if userInput == "r":
                     # query for values
-                    radialFloats = queryGauges()
+                    radialFloats = mitutoyoConnection.queryGauges()
                 else:
                     radialFloats = parseRadialMeas(userInput)
-                cardinalMeasurementList.append(CardinalMeasurement(measDir, radialFloats))
-            except ParseError as e:
+                # convert the radial floats to mm
+                radialFloats = [x*MMPerInch for x in radialFloats]
+                duPontMeasurementList.append(DuPontMeasurement(measDir, radialFloats))
+            except RuntimeError as e:
                 print(e)
             else:
                 break
 
-    doNewInterp(cardinalMeasurementList, MeasRadii)
+    doNewInterp(duPontMeasurementList)
     plt.show(block=False)
     while True:
         user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
@@ -94,7 +65,7 @@ def profile(args):
             sys.exit()
         else:
             print("bad user input. try again.")
-    mjd, fscanID = addProfilometry(plateID, cardinalMeasurementList)
+    mjd, fscanID = addProfilometry(plateID, duPontMeasurementList)
     # save image in /data
     print("saving profile image for mjd: %i fscanId: %i plateId: %i"%(mjd, fscanID, plateID))
     basePath = "/data/mapper/%s"%mjd
