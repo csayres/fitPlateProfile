@@ -18,77 +18,10 @@ import matplotlib.tri as mtri
 
 ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
-#FocalRad = 9000 # MM, du Pont telescope focal plane radius of curvature.
-# MeasRadii = numpy.asarray([0.8, 3.8, 5.8, 7.8, 10.8]) * MMPerInch
-#MeasRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
-
-# DirThetaMapCard = OrderedDict((
-#     ("N", 0.),
-#     ("NE", 7. * numpy.pi / 4.),
-#     ("E", 3. * numpy.pi / 2.),
-#     ("SE", 5. * numpy.pi / 4.),
-#     ("S", numpy.pi),
-#     ("SW", 3. * numpy.pi / 4.),
-#     ("W", numpy.pi / 2.),
-#     ("NW", numpy.pi / 4.),
-# ))
-
-# DirThetaMapHour = OrderedDict((
-#     ("twelve", 0 * 2 * numpy.pi / 12.),
-#     ("one", 1 * 2 * numpy.pi / 12.),
-#     ("two", 2 * 2 * numpy.pi / 12.),
-#     ("three", 3 * 2 * numpy.pi / 12.),
-#     ("four", 4 * 2 * numpy.pi / 12.),
-#     ("five", 5 * 2 * numpy.pi / 12.),
-#     ("six", 6 * 2 * numpy.pi / 12.),
-#     ("seven", 7 * 2 * numpy.pi / 12.),
-#     ("eight", 8 * 2 * numpy.pi / 12.),
-#     ("nine", 9 * 2 * numpy.pi / 12.),
-#     ("ten", 10 * 2 * numpy.pi / 12.),
-#     ("eleven", 11 * 2 * numpy.pi / 12.),
-
-# ))
-
-# the dir theta map for dupont uses
-# numbered directions
-# 1 = towards tab, numbers increase counter clockwise
-# in pi/4 increments
-
-# DirThetaMapDuPont = OrderedDict((
-#     (1, 0.),
-#     (2, 1. * numpy.pi / 4.),
-#     (3, 2. * numpy.pi / 4.),
-#     (4, 3. * numpy.pi / 4.),
-#     (5, 4. * numpy.pi / 4.),
-#     (6, 5. * numpy.pi / 4.),
-#     (7, 6. * numpy.pi / 4.),
-#     (8, 7. * numpy.pi / 4.),
-# ))
-
 
 
 DuPontFocalRadius = 8800 # mm
 
-# class Measurement(object):
-#     def __init__(self, direction, measList, dirThetaMap, toMM = False):
-#         # meas least must be in increasing radius
-#         # measurements in inches (converted to mm)
-#         assert len(measList) == len(MeasRadii)
-#         assert direction in dirThetaMap.keys(), direction + "  " + str(dirThetaMap.keys())
-#         self.direction = direction
-#         self.theta = dirThetaMap[direction]
-#         self.measList = numpy.asarray([measList])
-#         if toMM is True:
-#             self.measList = self.measList * MMPerInch
-
-
-# class CardinalMeasurement(Measurement):
-#     def __init__(self, direction, measList, toMM = True):
-#         Measurement.__init__(self, direction, measList, DirThetaMapCard, toMM = toMM)
-
-# class HourMeasurement(Measurement):
-#     def __init__(self, direction, measList):
-#         Measurement.__init__(self, direction, measList, DirThetaMapHour)
 
 class DuPontMeasurement(object):
     measRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
@@ -124,9 +57,6 @@ def plateSurfPlot(x,y,z):
     ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
     ax.set_zlabel("focal plane error (mm)")
     ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
-
-def interpRadTheta():
-    pass
 
 def doNewInterp(measList):
     # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in

@@ -2,7 +2,7 @@
 from collections import OrderedDict
 import itertools
 
-if False:
+if True:
     from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
     from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
