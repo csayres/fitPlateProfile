@@ -65,7 +65,7 @@ def doNewInterp(measList):
     # sort by theta (0-2pi)
     rawRadii = measList[0].measRadii # all radii should be the same
     rawThetas = numpy.array([cc.theta for cc in measList] + [2*numpy.pi])
-    rawMeas = numpy.array([cc.measList.squeeze() for cc in measList] + [measList[0].measList.squeeze()])
+    rawMeas = numpy.array([cc.measList for cc in measList] + [measList[0].measList])
     # raw meas is 2D array ra
     thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], 40)
     radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], 20)
