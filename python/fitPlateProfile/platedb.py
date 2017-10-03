@@ -8,17 +8,17 @@ if True:
 
 from fitPlateProfile import DuPontMeasurement
 
-def getMeasureDict(cardMeasList):
+def getMeasureDict(duPontMeasList):
     """List of CardinalMeasurement objects
     in order of directionList
     """
     outDict = OrderedDict()
-    for direction, cardMeas in itertools.izip(DuPontMeasurement.dirThetaMap.keys(), cardMeasList):
-        outDict[direction] = list(cardMeas.measList.flatten())
+    for direction, duPontMeas in itertools.izip(DuPontMeasurement.dirThetaMap.keys(), duPontMeasList):
+        outDict[direction] = duPontMeas.measList
     # logMsg(outDict)
     return outDict
 
-def addProfilometry(plateID, cardMeasList, comment=None):
+def addProfilometry(plateID, duPontMeasList, comment=None):
     """Write the profilometry information in profilometryDict to the db.
 
     @param[in] cartID, for getting the active plugging for this cart.
@@ -33,7 +33,7 @@ def addProfilometry(plateID, cardMeasList, comment=None):
         plugging = session.query(plateDB.Plugging).join(plateDB.ActivePlugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id==plateID).one()
     except:
         raise RuntimeError("No active plugging found for plateID: %i!  Was it mapped?"%plateID)
-    profilometryDict = getMeasureDict(cardMeasList)
+    profilometryDict = getMeasureDict(duPontMeasList)
     profilometry = plateDB.Profilometry()
     #LCO hack just pick the first tolerance
     tolerances = session.query(plateDB.ProfilometryTolerances).all()[0]
