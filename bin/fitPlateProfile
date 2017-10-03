@@ -31,7 +31,7 @@ def profile(args):
     print("Enter radial meaurements space separated with no decimal point.")
     print("Record from plate center to plate edge.")
     print("Begin with Measurement Postion 1 ==> probes towards tab.")
-    print("Continue measuring counter clockwise from the tab in increments of 45 degrees.")
+    print("Continue measuring clockwise from the tab in increments of 45 degrees.")
     duPontMeasurementList = []
     measurementDirections = DuPontMeasurement.dirThetaMap.keys() # measurement positions
     mitutoyoConnection = MitutoyoConnection()

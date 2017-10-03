@@ -28,13 +28,13 @@ class DuPontMeasurement(object):
     measRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
     dirThetaMap = OrderedDict((
         (1, 6. * numpy.pi / 4.), # tab
-        (2, 7. * numpy.pi / 4.), # tab + 45 degrees ccw
-        (3, 0.), # tab + 90 degrees ccw
-        (4, 1. * numpy.pi / 4.),
+        (2, 5. * numpy.pi / 4.), # tab + 45 degrees cw
+        (3, 4. * numpy.pi / 4.), # tab + 90 degrees ccw
+        (4, 3. * numpy.pi / 4.),
         (5, 2. * numpy.pi / 4.),
-        (6, 3. * numpy.pi / 4.),
-        (7, 4. * numpy.pi / 4.),
-        (8, 5. * numpy.pi / 4.),
+        (6, 1. * numpy.pi / 4.),
+        (7, 0.0),
+        (8, 7. * numpy.pi / 4.),
     ))
     def __init__(self, direction, measList):
         # direction is 1-8, measlist are values in mm meaured from small
