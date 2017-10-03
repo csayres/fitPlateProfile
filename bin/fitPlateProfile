@@ -86,7 +86,7 @@ def main(argv=None):
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,
         description="Profile a plate."
         )
-    parser.add_argument("--plateID", type=int, required=False, help="Cart ID")
+    parser.add_argument("--plateID", type=int, required=False, help="plate ID")
     args = parser.parse_args()
     profile(args)
 
