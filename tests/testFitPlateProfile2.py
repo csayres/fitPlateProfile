@@ -17,6 +17,6 @@ december9 = [
 # cardinalDirections = DirThetaMapDuPont.keys() # cardinal directions
 # radialFloats = [6.3754,  5.7657,  5.0673,  4.1528,  1.955]
 
-doNewInterp(december9)
+doNewInterp(december9, plateID=9999)
 plt.show(block=True)
 # import pdb; pdb.set_trace()

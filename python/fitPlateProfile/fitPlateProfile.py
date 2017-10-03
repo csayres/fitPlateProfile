@@ -15,6 +15,7 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
 import matplotlib.tri as mtri
+from matplotlib import gridspec
 
 ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
@@ -52,13 +53,82 @@ class DuPontProfile(object):
 
 
 def plateSurfPlot(x,y,z):
-    fig = plt.figure()
-    ax = fig.gca(projection="3d")
-    ax.plot_trisurf(x, y, z, cmap=cm.coolwarm, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
-    ax.set_zlabel("focal plane error (mm)")
-    ax.text(300, 0, 0, 'TAB', size=20, zorder=1, color='k')
+    colormap = cm.hot
+    paneColor = (0.25,0.25,0.25,0.25)
+    xlim = [-300,300]
+    ylim = [-300, 300]
+    zlim = [-0.4,0.4]
+    xticks = [-200, 0, 200]
+    yticks = [-200, 0, 200]
+    zticks = [-0.4, -0.2, 0, 0.2, 0.4]
 
-def doNewInterp(measList):
+    fig = plt.figure(figsize=(14,4))
+    # fig, (ax1, ax2, ax3, ax4) = plt.subplots(1, 4, subplot_kw=dict(projection="3d"), figsize=(11,3))
+    gs = gridspec.GridSpec(1, 4, width_ratios=[1, 5, 5, 5])
+    ax1 = plt.subplot(gs[0])
+    ax2 = plt.subplot(gs[1], projection="3d")
+    ax3 = plt.subplot(gs[2], projection="3d")
+    ax4 = plt.subplot(gs[3], projection="3d")
+
+    # fig = plt.figure()
+    # ax = fig.gca(projection="3d")
+    ax4.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax4.view_init(90,-90)
+    # ax1.set_zlabel("focal plane error (mm)")
+    ax4.text(0, -300, 0, 'TAB', size=10, weight="bold", zorder=1, color='k', verticalalignment='center', horizontalalignment='center')
+    ax4.set_xlabel("plate x (mm)")
+    ax4.set_ylabel("plate y (mm)", labelpad=15)
+    ax4.set_xlim(xlim)
+    ax4.set_ylim(ylim)
+    ax4.set_zlim(zlim)
+    ax4.set_zticks([])
+    ax4.set_xticks(xticks)
+    ax4.set_yticks(yticks)
+    ax4.w_zaxis.line.set_lw(0.)
+    ax4.w_xaxis.set_pane_color(paneColor)
+    ax4.w_yaxis.set_pane_color(paneColor)
+    ax4.w_zaxis.set_pane_color(paneColor)
+
+    ax3.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax3.view_init(0,-90)
+    ax3.set_xlabel("plate x (mm)")
+    # ax3.set_zlabel("focal plane error (mm)")
+    ax3.set_yticks([])
+    ax3.set_xticks(xticks)
+    ax3.set_zticks(zticks)
+    ax3.w_yaxis.line.set_lw(0.)
+    ax3.set_xlim(xlim)
+    ax3.set_ylim(ylim)
+    ax3.set_zlim(zlim)
+    ax3.w_xaxis.set_pane_color(paneColor)
+    ax3.w_yaxis.set_pane_color(paneColor)
+    ax3.w_zaxis.set_pane_color(paneColor)
+
+    ax2.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax2.view_init(0,0)
+    #ax2.set_xlabel("plate x (mm)")
+    ax2.set_ylabel("plate y (mm)")
+    ax2.set_zlabel("focal plane error (mm)")
+    ax2.set_xticks([])
+    ax2.set_yticks(yticks)
+    ax2.w_xaxis.line.set_lw(0.)
+    ax2.set_xlim(xlim)
+    ax2.set_ylim(ylim)
+    ax2.set_zlim(zlim)
+    ax2.set_zticks(zticks)
+    ax2.w_xaxis.set_pane_color(paneColor)
+    ax2.w_yaxis.set_pane_color(paneColor)
+    ax2.w_zaxis.set_pane_color(paneColor)
+
+    plt.sca(ax1)
+    ax1.axis("off")
+    m = cm.ScalarMappable(cmap=colormap)
+    m.set_array(ErrorTolerance)
+    plt.colorbar(m, ticks=[-0.2, -0.1, 0, 0.1, 0.2])
+
+
+
+def doNewInterp(measList, plateID):
     # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
     # get x,y positions for r, thetas
     measList.sort(key=lambda x: x.theta)
@@ -104,7 +174,6 @@ def doNewInterp(measList):
     model = numpy.array(model).flatten()
     err = model - measInterp
     err = err - numpy.mean(err) # maybe use median?
-    plateSurfPlot(xInterp, yInterp, err)
     errorUnits = numpy.asarray(errorUnits)
     errorUnits = errorUnits - numpy.mean(errorUnits)
     areaUnits = numpy.asarray(areaUnits)
@@ -114,7 +183,10 @@ def doNewInterp(measList):
     areaOutOfSpec = numpy.sum(areaUnits[outOfSpecInds])
     totalArea = numpy.sum(areaUnits)
     percentInSpec = 100 - areaOutOfSpec/totalArea * 100
-    print("percent of plate in spec: %.2f"%percentInSpec)
+    print("percent of plate in spec - %.2f"%percentInSpec)
+    plateSurfPlot(xInterp, yInterp, err)
+    f = plt.gcf()
+    f.suptitle("Plate %i:  %.0f%% within specifications ($\pm$ 0.2 mm)"%(plateID, percentInSpec))
 
 
 

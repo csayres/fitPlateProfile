@@ -53,7 +53,7 @@ def profile(args):
             else:
                 break
 
-    doNewInterp(duPontMeasurementList)
+    doNewInterp(duPontMeasurementList, plateID)
     plt.show(block=False)
     while True:
         user_input = raw_input("Accept Profile (add to platedb)? [(y)es,(n)o]").strip().lower()
