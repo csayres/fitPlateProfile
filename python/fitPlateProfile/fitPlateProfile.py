@@ -72,7 +72,7 @@ def plateSurfPlot(x,y,z):
 
     # fig = plt.figure()
     # ax = fig.gca(projection="3d")
-    ax4.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax4.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1], edgecolor='none')
     ax4.view_init(90,-90)
     # ax1.set_zlabel("focal plane error (mm)")
     ax4.text(0, -300, 0, 'TAB', size=10, weight="bold", zorder=1, color='k', verticalalignment='center', horizontalalignment='center')
@@ -89,7 +89,7 @@ def plateSurfPlot(x,y,z):
     ax4.w_yaxis.set_pane_color(paneColor)
     ax4.w_zaxis.set_pane_color(paneColor)
 
-    ax3.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax3.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1], edgecolor="none")
     ax3.view_init(0,-90)
     ax3.set_xlabel("plate x (mm)")
     # ax3.set_zlabel("focal plane error (mm)")
@@ -104,7 +104,7 @@ def plateSurfPlot(x,y,z):
     ax3.w_yaxis.set_pane_color(paneColor)
     ax3.w_zaxis.set_pane_color(paneColor)
 
-    ax2.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1])
+    ax2.plot_trisurf(x, y, z, cmap=colormap, vmin=ErrorTolerance[0], vmax=ErrorTolerance[1], edgecolor="none")
     ax2.view_init(0,0)
     #ax2.set_xlabel("plate x (mm)")
     ax2.set_ylabel("plate y (mm)")
