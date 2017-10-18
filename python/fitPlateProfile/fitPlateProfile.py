@@ -16,41 +16,15 @@ import matplotlib.pyplot as plt
 from matplotlib.mlab import griddata
 import matplotlib.tri as mtri
 from matplotlib import gridspec
+from scipy.interpolate import griddata, LinearNDInterpolator
 
 ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
+ThetaInterp = 100 #number of interpolation points in theta
+RadialInterp = 100 #number of interpolation points in radius
 
 
 DuPontFocalRadius = 8800 # mm
-
-
-class DuPontMeasurement(object):
-    measRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
-    dirThetaMap = OrderedDict((
-        (1, 6. * numpy.pi / 4.), # tab
-        (2, 5. * numpy.pi / 4.), # tab + 45 degrees cw
-        (3, 4. * numpy.pi / 4.), # tab + 90 degrees ccw
-        (4, 3. * numpy.pi / 4.),
-        (5, 2. * numpy.pi / 4.),
-        (6, 1. * numpy.pi / 4.),
-        (7, 0.0),
-        (8, 7. * numpy.pi / 4.),
-    ))
-    def __init__(self, direction, measList):
-        # direction is 1-8, measlist are values in mm meaured from small
-        # radius to large
-        self.measList = measList
-        assert direction in self.dirThetaMap.keys()
-        self.direction = direction
-
-    @property
-    def theta(self):
-        return self.dirThetaMap[self.direction]
-
-class DuPontProfile(object):
-    def __init__(self):
-        pass
-
 
 def plateSurfPlot(x,y,z):
     colormap = cm.hot
@@ -126,67 +100,155 @@ def plateSurfPlot(x,y,z):
     m.set_array(ErrorTolerance)
     plt.colorbar(m, ticks=[-0.2, -0.1, 0, 0.1, 0.2])
 
+class DuPontMeasurement(object):
+    measRadii = numpy.asarray([0.755, 3.75, 5.75, 7.75, 10.75]) * MMPerInch # Nick's measurements
+    dirThetaMap = OrderedDict((
+        (1, 6. * numpy.pi / 4.), # tab
+        (2, 5. * numpy.pi / 4.), # tab + 45 degrees cw
+        (3, 4. * numpy.pi / 4.), # tab + 90 degrees ccw
+        (4, 3. * numpy.pi / 4.),
+        (5, 2. * numpy.pi / 4.),
+        (6, 1. * numpy.pi / 4.),
+        (7, 0.0),
+        (8, 7. * numpy.pi / 4.),
+    ))
+    def __init__(self, direction, measList):
+        # direction is 1-8, measlist are values in mm meaured from small
+        # radius to large
+        self.measList = measList
+        assert direction in self.dirThetaMap.keys()
+        self.direction = direction
+
+    @property
+    def theta(self):
+        return self.dirThetaMap[self.direction]
+
+class DuPontProfile(object):
+    def __init__(self):
+
+        self.duPontMeasList = None
+        self.plateID = None
+        self.fscanID = None
+        self.fscanMJD = None
+        self.profID = None
+        self.percentInSpec = None
+
+    def addMeasList(self, measList):
+        measList.sort(key=lambda x: x.theta)
+        self.duPontMeasList = measList
+
+    def addPlateID(self, plateID):
+        self.plateID = plateID
+
+    def addFscanID(self, fscanID):
+        self.fscanID = fscanID
+
+    def addFscanMJD(self, fscanMJD):
+        self.fscanMJD = fscanMJD
+
+    def addProfID(self, profID):
+        self.profID = profID
 
 
-def doNewInterp(measList, plateID):
-    # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
-    # get x,y positions for r, thetas
-    measList.sort(key=lambda x: x.theta)
-    # sort by theta (0-2pi)
-    rawRadii = measList[0].measRadii # all radii should be the same
-    rawThetas = numpy.array([cc.theta for cc in measList] + [2*numpy.pi])
-    rawMeas = numpy.array([cc.measList for cc in measList] + [measList[0].measList])
-    # raw meas is 2D array ra
-    thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], 40)
-    radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], 20)
-    radInterpList = []
-    for radialMeas in rawMeas:
-        spl = scipy.interpolate.spline(rawRadii, radialMeas, radiiInterp)
-        radInterpList.append(spl)
-    radInterpList = numpy.asarray(radInterpList).T
-    fullInterp = []
-    for radInterp  in radInterpList:
-        spl = scipy.interpolate.spline(rawThetas, radInterp, thetaInterp)
-        fullInterp.append(spl)
-    fullInterp = numpy.array(fullInterp).T
-    xInterp = []
-    yInterp = []
-    measInterp = []
-    model = []
-    areaUnits = [] # for determining percent of plate out of spec
-    errorUnits = [] # for determining percent of plate out of spec
-    for theta, interpMeas in itertools.izip(thetaInterp, fullInterp):
-        # theta - 90 to make tab at -y on plot, N == tab direction == 0 theta.
-        # theta increases in the normal way counter clockwise from x axis
-        xInterp.append(numpy.cos(theta)*radiiInterp)
-        yInterp.append(numpy.sin(theta)*radiiInterp)
-        measInterp.append(interpMeas)
-        model.append(numpy.sqrt(DuPontFocalRadius**2-radiiInterp**2))
-        # for determining percent of plate out of spec
-        if theta < 2*numpy.pi:
-            # don't count last 2pi, it was added to ensure the spline 0==2pi
-            for rad1, rad2, measurement in itertools.izip(radiiInterp[:-1], radiiInterp[1:], interpMeas[:-1]):
-                errorUnits.append(numpy.sqrt(DuPontFocalRadius**2-rad1**2) - measurement)
-                areaUnits.append(numpy.pi*(rad2**2-rad1**2)/39.0) # 40 for interpolated theta
-    xInterp = numpy.array(xInterp).flatten()
-    yInterp = numpy.array(yInterp).flatten()
-    measInterp = numpy.array(measInterp).flatten()
-    model = numpy.array(model).flatten()
-    err = model - measInterp
-    err = err - numpy.mean(err) # maybe use median?
-    errorUnits = numpy.asarray(errorUnits)
-    errorUnits = errorUnits - numpy.mean(errorUnits)
-    areaUnits = numpy.asarray(areaUnits)
-    #determine out of specness
-    errorUnits = numpy.abs(errorUnits)
-    outOfSpecInds = numpy.argwhere(errorUnits>0.2)
-    areaOutOfSpec = numpy.sum(areaUnits[outOfSpecInds])
-    totalArea = numpy.sum(areaUnits)
-    percentInSpec = 100 - areaOutOfSpec/totalArea * 100
-    print("percent of plate in spec - %.2f"%percentInSpec)
-    plateSurfPlot(xInterp, yInterp, err)
-    f = plt.gcf()
-    f.suptitle("Plate %i:  %.0f%% within specifications ($\pm$ 0.2 mm)"%(plateID, percentInSpec))
+    def doNewInterp(self):
+        # todo, break this up into understandable pieces?
+        if self.duPontMeasList is None:
+            raise RuntimeError("Empty Measurement List")
+        if self.plateID is None:
+            raise RuntimeError("Unknown plateID")
+        measList = self.duPontMeasList
+        # http://stackoverflow.com/questions/22653956/using-scipy-spatial-delaunay-in-place-of-matplotlib-tri-triangulations-built-in
+        # get x,y positions for r, thetas
+        measList.sort(key=lambda x: x.theta) # should already be sorted but whatever
+        # sort by theta (0-2pi)
+        rawRadii = measList[0].measRadii # all radii should be the same
+        rawThetas = numpy.array([cc.theta for cc in measList] + [2*numpy.pi])
+        rawMeas = numpy.array([cc.measList for cc in measList] + [measList[0].measList])
+        # raw meas is 2D array ra
+        thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], ThetaInterp)
+        radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], RadialInterp)
+        radInterpList = []
+        for radialMeas in rawMeas:
+            spl = scipy.interpolate.spline(rawRadii, radialMeas, radiiInterp)
+            radInterpList.append(spl)
+        radInterpList = numpy.asarray(radInterpList).T
+        fullInterp = []
+        for radInterp  in radInterpList:
+            spl = scipy.interpolate.spline(rawThetas, radInterp, thetaInterp)
+            fullInterp.append(spl)
+        fullInterp = numpy.array(fullInterp).T
+        xInterp = []
+        yInterp = []
+        measInterp = []
+        model = []
+        areaUnits = [] # for determining percent of plate out of spec
+        errorUnits = [] # for determining percent of plate out of spec
+        for theta, interpMeas in itertools.izip(thetaInterp, fullInterp):
+            # theta - 90 to make tab at -y on plot, N == tab direction == 0 theta.
+            # theta increases in the normal way counter clockwise from x axis
+            xInterp.append(numpy.cos(theta)*radiiInterp)
+            yInterp.append(numpy.sin(theta)*radiiInterp)
+            measInterp.append(interpMeas)
+            model.append(numpy.sqrt(DuPontFocalRadius**2-radiiInterp**2))
+            # for determining percent of plate out of spec
+            if theta < 2*numpy.pi:
+                # don't count last 2pi, it was added to ensure the spline 0==2pi
+                for rad1, rad2, measurement in itertools.izip(radiiInterp[:-1], radiiInterp[1:], interpMeas[:-1]):
+                    errorUnits.append(numpy.sqrt(DuPontFocalRadius**2-rad1**2) - measurement)
+                    areaUnits.append(numpy.pi*(rad2**2-rad1**2)/39.0) # 40 for interpolated theta
+        self.xInterp = numpy.array(xInterp).flatten()
+        self.yInterp = numpy.array(yInterp).flatten()
+        self.measInterp = numpy.array(measInterp).flatten()
+        self.model = numpy.array(model).flatten()
+        err = self.model - self.measInterp
+        self.err = err - numpy.mean(err) # maybe use median?
+        errorUnits = numpy.asarray(errorUnits)
+        errorUnits = errorUnits - numpy.mean(errorUnits)
+        areaUnits = numpy.asarray(areaUnits)
+        #determine out of specness
+        errorUnits = numpy.abs(errorUnits)
+        outOfSpecInds = numpy.argwhere(errorUnits>0.2)
+        areaOutOfSpec = numpy.sum(areaUnits[outOfSpecInds])
+        totalArea = numpy.sum(areaUnits)
+        self.percentInSpec = 100 - areaOutOfSpec/totalArea * 100
+        print("percent of plate in spec - %.2f"%self.percentInSpec)
+        plateSurfPlot(self.xInterp, self.yInterp, self.err)
+        f = plt.gcf()
+        f.suptitle("Plate %i:  %.0f%% within specifications ($\pm$ 0.2 mm)"%(self.plateID, self.percentInSpec))
+        self.ndInterp = LinearNDInterpolator(numpy.array([self.xInterp, self.yInterp]).T, self.err)
+
+
+    def _getErr(self, xPos, yPos):
+        # return the (estimated) focal plane error in mm for a given xyPos on the plate (mm)
+        dist = numpy.sqrt((xPos - self.xInterp)**2+(yPos - self.yInterp)**2)
+        minDistInd = numpy.argmin(dist)
+        minX = self.xInterp[minDistInd]
+        minY = self.yInterp[minDistInd]
+        error = self.err[minDistInd]
+        # print("x err: %.2f, y err: %.2f, error: %.2f"%(minX-xPos, minY-yPos, error))
+        return error
+
+    def getErr(self, xPos, yPos):
+        # use linear interpolation
+        return self.ndInterp(numpy.array([xPos,yPos]))
+
+    def testInterp(self):
+        xArr = numpy.linspace(-300,300,250)
+        yArr = numpy.linspace(-300,300,250)
+        xVals = []
+        yVals = []
+        errVals = []
+        for x in xArr:
+            for y in yArr:
+                xVals.append(x)
+                yVals.append(y)
+                err = self.getErr(x,y)[0]
+                errVals.append(err)
+        xVals = numpy.asarray(xVals)
+        yVals = numpy.asarray(yVals)
+        errVals = numpy.asarray(errVals)
+        plateSurfPlot(xVals, yVals, errVals)
+
 
 
 

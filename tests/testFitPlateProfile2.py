@@ -1,4 +1,4 @@
-from fitPlateProfile import DuPontMeasurement, doNewInterp, plt#, MeasRadii, DirThetaMapDuPont
+from fitPlateProfile import DuPontMeasurement, DuPontProfile, plt#, MeasRadii, DirThetaMapDuPont
 import numpy
 
 # cardinalMeasurementList = []
@@ -17,6 +17,15 @@ december9 = [
 # cardinalDirections = DirThetaMapDuPont.keys() # cardinal directions
 # radialFloats = [6.3754,  5.7657,  5.0673,  4.1528,  1.955]
 
-doNewInterp(december9, plateID=9999)
+dpf = DuPontProfile()
+dpf.addMeasList(december9)
+dpf.addPlateID(9999)
+dpf.doNewInterp()
+xPos = numpy.arange(-200,200,10)
+yPos = numpy.arange(-200,200,10)
+for x in xPos:
+    for y in yPos:
+        print("%.2f, %.2f  err: %.2f"%(x, y, dpf.getErr(x,y)))
+dpf.testInterp()
 plt.show(block=True)
 # import pdb; pdb.set_trace()
