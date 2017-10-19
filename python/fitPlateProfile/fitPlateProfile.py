@@ -105,7 +105,7 @@ class DuPontMeasurement(object):
     dirThetaMap = OrderedDict((
         (1, 6. * numpy.pi / 4.), # tab
         (2, 5. * numpy.pi / 4.), # tab + 45 degrees cw
-        (3, 4. * numpy.pi / 4.), # tab + 90 degrees ccw
+        (3, 4. * numpy.pi / 4.), # tab + 90 degrees cw
         (4, 3. * numpy.pi / 4.),
         (5, 2. * numpy.pi / 4.),
         (6, 1. * numpy.pi / 4.),
@@ -333,10 +333,26 @@ class DuPontProfile(object):
         profs.sort(key=lambda x: x.timestamp)
         lastProf = profs[-1]
         duPontMeasList = []
+        # meas.number is 0-2pi (which is differend from the dir theta map directions which begin at -pi/4)
+        # pluggers measure from tab and proceed clockwise.
+        # values are stored in db beginning at 0 and proceeding counter clockwise because the
+        # dupont measurements are sorted by theta before entering them in the db.
+        # an unfortuante mess but be sure to unreavel these things correctly.
+        measNum2DirMap = {
+            1 : 7,
+            2 : 6,
+            3 : 5,
+            4 : 4,
+            5 : 3,
+            6 : 2,
+            7 : 1,
+            8 : 8,
+        }
         for meas in lastProf.measurements:
             rList = [meas.r1, meas.r2, meas.r3, meas.r4, meas.r5]
             rList = [float(x) for x in rList]
-            direction = int(meas.number)
+            measNum = int(meas.number)
+            direction = measNum2DirMap[measNum]
             duPontMeasList.append(DuPontMeasurement(direction, rList))
         self.addMeasList(duPontMeasList)
         self.doNewInterp()
