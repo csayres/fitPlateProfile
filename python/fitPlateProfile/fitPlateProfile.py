@@ -324,6 +324,9 @@ class DuPontProfile(object):
                 raise RuntimeError("Unknown Plate ID")
             else:
                 plateID = self.plateID
+        elif self.plateID is not None:
+            raise RuntimeError("Conflicting plate IDs!")
+        self.plateID = plateID
 
         session = plateDB.db.Session()
         profs = session.query(plateDB.Profilometry).join(plateDB.Plugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id == plateID).all()
