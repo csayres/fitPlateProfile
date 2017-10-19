@@ -3,4 +3,6 @@ from fitPlateProfile import DuPontMeasurement, DuPontProfile, plt#, MeasRadii, D
 
 dpf = DuPontProfile()
 dpf.getProfileFromDB(9990)
+dpf.plot()
+plt.show(block=True)
 # import pdb; pdb.set_trace()

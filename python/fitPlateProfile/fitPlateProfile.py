@@ -332,7 +332,14 @@ class DuPontProfile(object):
         profs = session.query(plateDB.Profilometry).all()
         profs.sort(key=lambda x: x.timestamp)
         lastProf = profs[-1]
-        import pdb; pdb.set_trace()
+        duPontMeasList = []
+        for meas in lastProf.measurements:
+            rList = [meas.r1, meas.r2, meas.r3, meas.r4, meas.r5]
+            rList = [float(x) for x in rList]
+            direction = int(meas.number)
+            duPontMeasList.append(DuPontMeasurement(direction, rList))
+        self.addMeasList(duPontMeasList)
+        self.doNewInterp()
 
 
 
