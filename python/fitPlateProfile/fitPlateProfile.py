@@ -212,10 +212,12 @@ class DuPontProfile(object):
         totalArea = numpy.sum(areaUnits)
         self.percentInSpec = 100 - areaOutOfSpec/totalArea * 100
         print("percent of plate in spec - %.2f"%self.percentInSpec)
+        self.ndInterp = LinearNDInterpolator(numpy.array([self.xInterp, self.yInterp]).T, self.err)
+
+    def plot(self):
         plateSurfPlot(self.xInterp, self.yInterp, self.err)
         f = plt.gcf()
         f.suptitle("Plate %i:  %.0f%% within specifications ($\pm$ 0.2 mm)"%(self.plateID, self.percentInSpec))
-        self.ndInterp = LinearNDInterpolator(numpy.array([self.xInterp, self.yInterp]).T, self.err)
 
 
     def _getErr(self, xPos, yPos):
@@ -248,6 +250,86 @@ class DuPontProfile(object):
         yVals = numpy.asarray(yVals)
         errVals = numpy.asarray(errVals)
         plateSurfPlot(xVals, yVals, errVals)
+
+    def getMeasureDict(self):
+        """List of CardinalMeasurement objects
+        in order of directionList
+        """
+        outDict = OrderedDict()
+        for direction, duPontMeas in itertools.izip(DuPontMeasurement.dirThetaMap.keys(), self.duPontMeasList):
+            outDict[direction] = duPontMeas.measList
+        # logMsg(outDict)
+        return outDict
+
+
+    def addProfileToDB(self, comment=None):
+        """Write the profilometry information in profilometryDict to the db.
+
+        @param[in] cartID, for getting the active plugging for this cart.
+        @param[in] List of CardinalMeasurement objects in order of directionList N, NE, ...
+        @param[in] comment: a comment associated with this profilometry.
+
+        return MJD, scanID for saving profile images alongside mapper data
+        """
+        #DBSession.query(PlPlugMapM).filter(PlPlugMapM.filename==kwargs['plplugmap']).one()
+        from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
+        from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+        if self.plateID is None:
+            raise RuntimeError("Unknown Plate ID")
+        if self.duPontMeasList is None:
+            raise RuntimeError("No Measurements!")
+        session = plateDB.db.Session()
+        try:
+            plugging = session.query(plateDB.Plugging).join(plateDB.ActivePlugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id==plateID).one()
+        except:
+            raise RuntimeError("No active plugging found for plateID: %i!  Was it mapped?"%self.plateID)
+        profilometryDict = self.getMeasureDict()
+        profilometry = plateDB.Profilometry()
+        #LCO hack just pick the first tolerance
+        tolerances = session.query(plateDB.ProfilometryTolerances).all()[0]
+        # tolerances = session.query(plateDB.ProfilometryTolerances).join(plateDB.Survey)\
+        #                 .filter(plateDB.ProfilometryTolerances.survey == self.plate.surveys[0])\
+        #                 .limit(1).one()
+
+        # loop over measurement numbers (directions)
+        for ii, measList in enumerate(profilometryDict.itervalues()):
+            pm = plateDB.ProfilometryMeasurement()
+            pm.number = ii+1
+            pm.r1 = measList[0]
+            pm.r2 = measList[1]
+            pm.r3 = measList[2]
+            pm.r4 = measList[3]
+            pm.r5 = measList[4]
+            profilometry.measurements.append(pm)
+
+        if comment:
+            profilometry.comment = comment
+
+        # get the active plugging of this plate,
+        # the mapper sets the active plugging.
+        # associate the profilometry with it
+        profilometry.tolerances = tolerances
+        profilometry.plugging = plugging
+        with session.begin():
+            session.add(profilometry)
+        return plugging.fscan_mjd, plugging.fscan_id
+
+
+    def getProfileFromDB(self, plateID=None):
+        from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
+        from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+        # for now just grab the last profile for this plate
+        if plateID is None:
+            if self.plateID is None:
+                raise RuntimeError("Unknown Plate ID")
+            else:
+                plateID = self.plateID
+
+        session = plateDB.db.Session()
+        profs = session.query(plateDB.Profilometry).join(plateDB.Plugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id == plateID).all()
+        import pdb; pdb.set_trace()
+
+
 
 
 
