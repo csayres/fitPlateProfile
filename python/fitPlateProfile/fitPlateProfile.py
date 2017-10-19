@@ -329,7 +329,7 @@ class DuPontProfile(object):
         self.plateID = plateID
 
         session = plateDB.db.Session()
-        profs = session.query(plateDB.Profilometry).all()
+        profs = session.query(plateDB.Profilometry).join(plateDB.Plugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id == plateID).all()
         profs.sort(key=lambda x: x.timestamp)
         lastProf = profs[-1]
         duPontMeasList = []
