@@ -232,7 +232,7 @@ class DuPontProfile(object):
 
     def getErr(self, xPos, yPos):
         # use linear interpolation
-        return self.ndInterp(numpy.array([xPos,yPos]))
+        return self.ndInterp(numpy.array([xPos,yPos]))[0]
 
     def testInterp(self):
         xArr = numpy.linspace(-300,300,250)
