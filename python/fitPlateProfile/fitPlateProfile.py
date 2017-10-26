@@ -132,6 +132,8 @@ class DuPontProfile(object):
         self.fscanMJD = None
         self.profID = None
         self.percentInSpec = None
+        self.cartID = None
+        self.isActivePlugging = None
 
     def addMeasList(self, measList):
         measList.sort(key=lambda x: x.theta)
@@ -148,6 +150,9 @@ class DuPontProfile(object):
 
     def addProfID(self, profID):
         self.profID = profID
+
+    def addCartID(self, cartID):
+        self.cartID = cartID
 
 
     def doNewInterp(self):
