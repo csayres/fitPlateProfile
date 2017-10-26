@@ -237,7 +237,7 @@ class DuPontProfile(object):
 
     def getErr(self, xPos, yPos):
         # use linear interpolation
-        return self.ndInterp(numpy.array([xPos,yPos]))
+        return self.ndInterp(numpy.array([xPos,yPos]))[0]
 
     def testInterp(self):
         xArr = numpy.linspace(-300,300,250)
@@ -285,8 +285,9 @@ class DuPontProfile(object):
             raise RuntimeError("No Measurements!")
         session = plateDB.db.Session()
         try:
-            plugging = session.query(plateDB.Plugging).join(plateDB.ActivePlugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id==plateID).one()
-        except:
+            plugging = session.query(plateDB.Plugging).join(plateDB.ActivePlugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id==self.plateID).one()
+        except Exception as e:
+            print(str(e))
             raise RuntimeError("No active plugging found for plateID: %i!  Was it mapped?"%self.plateID)
         profilometryDict = self.getMeasureDict()
         profilometry = plateDB.Profilometry()
