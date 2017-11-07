@@ -1,22 +1,25 @@
 from __future__ import division, absolute_import
 """For fitting and displaying SDSS plate profiles from dial indicator measurements
 """
-import copy
 import numpy
 import numpy.linalg
 from collections import OrderedDict
 import itertools
+import socket
+domainName = socket.getfqdn()
+if domainName.endswith("lco.cl"):
+    from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+elif domainName.endswith("wasatch.peaks"):
+    from sdss.internal.database.connections import LCODatabaseAdminUtahConnection
+    from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
 import scipy.interpolate
 import scipy.spatial
-from scipy.interpolate import interp1d
-from mpl_toolkits.mplot3d import Axes3D
 from matplotlib import cm
 import matplotlib.pyplot as plt
-from matplotlib.mlab import griddata
-import matplotlib.tri as mtri
 from matplotlib import gridspec
-from scipy.interpolate import griddata, LinearNDInterpolator
+from scipy.interpolate import LinearNDInterpolator
 
 ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
@@ -277,8 +280,6 @@ class DuPontProfile(object):
         return MJD, scanID for saving profile images alongside mapper data
         """
         #DBSession.query(PlPlugMapM).filter(PlPlugMapM.filename==kwargs['plplugmap']).one()
-        from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
-        from sdss.internal.database.apo.platedb import ModelClasses as plateDB
         if self.plateID is None:
             raise RuntimeError("Unknown Plate ID")
         if self.duPontMeasList is None:
@@ -321,9 +322,7 @@ class DuPontProfile(object):
         return plugging.fscan_mjd, plugging.fscan_id
 
 
-    def getProfileFromDB(self, plateID=None):
-        from sdss.internal.database.connections import LCODatabaseAdminLocalConnection
-        from sdss.internal.database.apo.platedb import ModelClasses as plateDB
+    def getProfileFromDB(self, plateID=None, fscanID=None, fscanMJD=None, isActivePlugging=False):
         # for now just grab the last profile for this plate
         if plateID is None:
             if self.plateID is None:
@@ -335,7 +334,17 @@ class DuPontProfile(object):
         self.plateID = plateID
 
         session = plateDB.db.Session()
-        profs = session.query(plateDB.Profilometry).join(plateDB.Plugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id == plateID).all()
+        query = session.query(plateDB.Profilometry).join(plateDB.Plugging).join(plateDB.Plate).filter(plateDB.Plate.plate_id == plateID)
+        if isActivePlugging:
+            query = query.join(plateDB.ActivePlugging)
+        if fscanID is not None:
+            query = query.filter(plateDB.Plugging.fscan_id == fscanID)
+        if fscanMJD is not None:
+            query = query.filter(plateDB.Plugging.fscan_mjd == fscanMJD)
+
+        profs = query.all()
+        if not profs:
+            raise RuntimeError("Could not find profile")
         profs.sort(key=lambda x: x.timestamp)
         lastProf = profs[-1]
         duPontMeasList = []
