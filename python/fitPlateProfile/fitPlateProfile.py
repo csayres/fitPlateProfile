@@ -14,6 +14,7 @@ elif domainName.endswith("wasatch.peaks"):
     from sdss.internal.database.connections import LCODatabaseAdminUtahConnection
     from sdss.internal.database.apo.platedb import ModelClasses as plateDB
 
+from mpl_toolkits.mplot3d import Axes3D
 import scipy.interpolate
 import scipy.spatial
 from matplotlib import cm
