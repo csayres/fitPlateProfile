@@ -23,8 +23,8 @@ from scipy.interpolate import LinearNDInterpolator
 
 ErrorTolerance = [-0.2, 0.2] #range in mm in which the profile error (measured - focal plane) is acceptable
 MMPerInch = 25.4
-ThetaInterp = 100 #number of interpolation points in theta
-RadialInterp = 100 #number of interpolation points in radius
+#ThetaInterp = 100 #number of interpolation points in theta
+#RadialInterp = 100 #number of interpolation points in radius
 
 
 DuPontFocalRadius = 8800 # mm
@@ -158,7 +158,7 @@ class DuPontProfile(object):
         self.cartID = cartID
 
 
-    def doNewInterp(self):
+    def doNewInterp(self, nInterpTheta=100, nInterpRadial=100):
         # todo, break this up into understandable pieces?
         if self.duPontMeasList is None:
             raise RuntimeError("Empty Measurement List")
@@ -173,8 +173,8 @@ class DuPontProfile(object):
         rawThetas = numpy.array([cc.theta for cc in measList] + [2*numpy.pi])
         rawMeas = numpy.array([cc.measList for cc in measList] + [measList[0].measList])
         # raw meas is 2D array ra
-        thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], ThetaInterp)
-        radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], RadialInterp)
+        thetaInterp = numpy.linspace(rawThetas[0], rawThetas[-1], nInterpTheta)
+        radiiInterp = numpy.linspace(rawRadii[0], rawRadii[-1], nInterpRadial)
         radInterpList = []
         for radialMeas in rawMeas:
             spl = scipy.interpolate.spline(rawRadii, radialMeas, radiiInterp)
